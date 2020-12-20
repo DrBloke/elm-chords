@@ -1,8 +1,8 @@
 module Chords exposing
     ( Chord(..), Quality(..), TertianQuality(..)
     , toString, toIntegerNotation
-    , Token(..), chordParser, lineParser
-    , parseChord, parseLine, parseSheet
+    , Token(..), chordParser, lineParser, chordVariationParser
+    , parseChord, parseLine, parseSheet, parseChordVariation
     , Fret, Voicing, voicingToString
     )
 
@@ -40,6 +40,7 @@ import Parser as P
         , symbol
         )
 import Set
+import Parser exposing (spaces)
 
 
 {-| A chord has a note which gives it a name and a general quality.
@@ -289,10 +290,29 @@ parseChord string =
     in
     P.run endParser string
 
+parseChordVariation : String -> Result (List P.DeadEnd) (Chord, Variation)
+parseChordVariation string =
+    P.run chordVariationParser string
 
 {-| The actual chord parser. Using this you can create your own line parser,
 for example if you want to parse chords separated by spaces, or curly brackets.
 -}
+type alias Variation = Int
+chordVariationParser : Parser (Chord, Variation)
+chordVariationParser =
+    succeed (\chord variation -> (chord, variation))
+        |= chordParser
+        |. spaces
+        |= oneOf
+            [ Parser.int
+            , succeed 1
+            ]
+        |. Parser.end       
+
+
+
+
+
 chordParser : Parser Chord
 chordParser =
     let
