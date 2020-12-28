@@ -9,20 +9,13 @@ import Instruments.Ukulele as Ukulele
 
 
 type alias Model =
-    { chords : List (String) }
+    { chords : String }
 
 
 initialModel : Model
 initialModel =
     { chords =
-        [ ("C 1")
-        , ("Dm 1")
-        , ("Em 1")
-        , ("F 1")
-        , ("G 1")
-        , ("Am 1")
-        , ("Bdim 1")
-        ]
+        "Am Em-2 C"
     }
 
 
@@ -48,22 +41,22 @@ view model =
             }
 
         content =
-            model.chords
-                |> List.map (\elem -> (  elem, Chords.parseChordVariation  elem ))
-                |> List.map
-                    (\( name, result ) ->
-                        case result of
-                            Ok (chord, variation) ->
-                                Ukulele.voicings ukulele chord
-                                    |> List.drop (variation - 1) 
-                                    |> List.head
-                                    |> Maybe.map (viewChart name)
-                                    |> Maybe.withDefault
-                                        (Html.text ("Could not find voicing for " ++ name))
+            case Chords.parseChordSequence model.chords of
+                Ok chordsWithVariation ->
+                    chordsWithVariation
+                           |> List.map
+                            (\{name, chord, variation} ->
+                                        Ukulele.voicings ukulele chord
+                                            |> List.drop (variation - 1) 
+                                            |> List.head
+                                            |> Maybe.map (viewChart name)
+                                            |> Maybe.withDefault
+                                                (Html.text ("Could not find voicing for " ++ name))
+                            )
 
-                            Err err ->
-                                Html.text ("Could not parse chord " ++ name)
-                    )
+                Err err ->
+                                [Html.text ("Could not parse chord sequence")]
+                    
     in
     Html.div
         [ Attr.style "display" "flex"

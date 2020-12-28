@@ -1,9 +1,10 @@
 module Chords exposing
     ( Chord(..), Quality(..), TertianQuality(..)
     , toString, toIntegerNotation
-    , Token(..), chordParser, lineParser, chordVariationParser
-    , parseChord, parseLine, parseSheet, parseChordVariation
+    , Token(..), chordParser, lineParser
+    , parseChord, parseLine, parseSheet
     , Fret, Voicing, voicingToString
+    , chordVariationParser, parseChordVariation, parseChordSequence
     )
 
 {-| Parse chords and chord sheets in Elm
@@ -36,11 +37,11 @@ import Parser as P
         , (|=)
         , Parser
         , oneOf
+        , spaces
         , succeed
         , symbol
         )
 import Set
-import Parser exposing (spaces)
 
 
 {-| A chord has a note which gives it a name and a general quality.
@@ -290,29 +291,61 @@ parseChord string =
     in
     P.run endParser string
 
-parseChordVariation : String -> Result (List P.DeadEnd) (Chord, Variation)
+parseChordSequence : String -> Result (List P.DeadEnd) (List ChordWithVariation)
+parseChordSequence string =
+    P.run chordSequenceParser string
+
+chordSequenceParser : Parser (List ChordWithVariation)
+chordSequenceParser =
+    P.loop [] chordSequenceHelper
+
+chordSequenceHelper : List ChordWithVariation -> Parser (P.Step (List ChordWithVariation) (List ChordWithVariation))
+chordSequenceHelper revChords =
+    oneOf
+    [ succeed (\chord -> P.Loop (chord :: revChords))
+        |= chordVariationParser
+        |. spaces
+        |. oneOf 
+            [ spaces
+            , P.end
+            ]
+    , succeed ()
+        |> P.map (\_ -> P.Done (List.reverse revChords))
+    ]
+
+parseChordVariation : String -> Result (List P.DeadEnd) ChordWithVariation
 parseChordVariation string =
     P.run chordVariationParser string
+
+
+type alias ChordWithVariation =
+    { name : String
+    , chord : Chord
+    , variation : Int
+    }
+
+
+type alias Variation =
+    Int
+
+
+chordVariationParser : Parser ChordWithVariation 
+chordVariationParser  =
+    succeed (\(name, chord) variation -> ChordWithVariation name chord variation )
+        |= P.mapChompedString (\name chord -> (name, chord)) chordParser
+        |= oneOf
+            [ (succeed identity
+                |. symbol "-"
+                |= P.int
+              )
+            , succeed 1
+            ]
+        --|. P.end
+
 
 {-| The actual chord parser. Using this you can create your own line parser,
 for example if you want to parse chords separated by spaces, or curly brackets.
 -}
-type alias Variation = Int
-chordVariationParser : Parser (Chord, Variation)
-chordVariationParser =
-    succeed (\chord variation -> (chord, variation))
-        |= chordParser
-        |. spaces
-        |= oneOf
-            [ Parser.int
-            , succeed 1
-            ]
-        |. Parser.end       
-
-
-
-
-
 chordParser : Parser Chord
 chordParser =
     let

@@ -15,7 +15,7 @@ type alias Model =
 initialModel : Model
 initialModel =
     { chords =
-        [ "Am"
+        [ "D"
         , "E"
         , "C"
         , "Dm7"
@@ -23,6 +23,8 @@ initialModel =
         , "F"
         , "A#"
         , "C#"
+        , "B"
+        , "Bm"
         ]
     }
 
