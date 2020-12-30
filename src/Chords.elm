@@ -4,7 +4,7 @@ module Chords exposing
     , Token(..), chordParser, lineParser
     , parseChord, parseLine, parseSheet
     , Fret, Voicing, voicingToString
-    , chordVariationParser, parseChordVariation, parseChordSequence
+    , chordVariationParser, parseChordSequence, parseChordVariation
     )
 
 {-| Parse chords and chord sheets in Elm
@@ -291,27 +291,31 @@ parseChord string =
     in
     P.run endParser string
 
+
 parseChordSequence : String -> Result (List P.DeadEnd) (List ChordWithVariation)
 parseChordSequence string =
     P.run chordSequenceParser string
+
 
 chordSequenceParser : Parser (List ChordWithVariation)
 chordSequenceParser =
     P.loop [] chordSequenceHelper
 
+
 chordSequenceHelper : List ChordWithVariation -> Parser (P.Step (List ChordWithVariation) (List ChordWithVariation))
 chordSequenceHelper revChords =
     oneOf
-    [ succeed (\chord -> P.Loop (chord :: revChords))
-        |= chordVariationParser
-        |. spaces
-        |. oneOf 
-            [ spaces
-            , P.end
-            ]
-    , succeed ()
-        |> P.map (\_ -> P.Done (List.reverse revChords))
-    ]
+        [ succeed (\chord -> P.Loop (chord :: revChords))
+            |= chordVariationParser
+            |. spaces
+            |. oneOf
+                [ spaces
+                , P.end
+                ]
+        , succeed ()
+            |> P.map (\_ -> P.Done (List.reverse revChords))
+        ]
+
 
 parseChordVariation : String -> Result (List P.DeadEnd) ChordWithVariation
 parseChordVariation string =
@@ -329,18 +333,20 @@ type alias Variation =
     Int
 
 
-chordVariationParser : Parser ChordWithVariation 
-chordVariationParser  =
-    succeed (\(name, chord) variation -> ChordWithVariation name chord variation )
-        |= P.mapChompedString (\name chord -> (name, chord)) chordParser
+chordVariationParser : Parser ChordWithVariation
+chordVariationParser =
+    succeed (\( name, chord ) variation -> ChordWithVariation name chord variation)
+        |= P.mapChompedString (\name chord -> ( name, chord )) chordParser
         |= oneOf
-            [ (succeed identity
+            [ succeed identity
                 |. symbol "-"
                 |= P.int
-              )
             , succeed 1
             ]
-        --|. P.end
+
+
+
+--|. P.end
 
 
 {-| The actual chord parser. Using this you can create your own line parser,

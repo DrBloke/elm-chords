@@ -52,6 +52,7 @@ voicings { tuning, numFrets } chord =
                     (\( fret, note_ ) ->
                         List.any (matchingNote note_) desiredNotes
                     )
+
         availableVoicings n =
             tuning
                 |> List.map (buildFretNoteRange n)
@@ -128,6 +129,7 @@ voicingInfo voicing =
 fretRange : Int
 fretRange =
     4
+
 
 matchingNote : Pitch -> Note -> Bool
 matchingNote pitch note =
